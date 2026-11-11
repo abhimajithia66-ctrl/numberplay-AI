@@ -1,0 +1,515 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUMBERPLAY AI ANALYTICS</title>
+<style>
+:root {
+  --bg:#080d19;
+  --panel:#111b2e;
+  --border:#243653;
+  --cyan:#21d4fd;
+  --purple:#a855f7;
+  --text:#edf5ff;
+  --muted:#91a4bf;
+  --green:#35d49a;
+  --red:#ff627c;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:radial-gradient(circle at top,#172747,var(--bg) 55%);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+}
+header {
+  padding:24px 16px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+header h1 {
+  margin:0;
+  color:var(--cyan);
+  letter-spacing:2px;
+  font-size:clamp(22px,5vw,34px);
+}
+header p { color:var(--muted); margin:9px 0 0; }
+.container { max-width:1100px; margin:auto; padding:20px; }
+.notice {
+  border:1px solid #7652a8;
+  background:#211635;
+  color:#e5d5ff;
+  padding:13px;
+  border-radius:12px;
+  font-size:13px;
+  line-height:1.5;
+  margin-bottom:18px;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+  gap:13px;
+}
+.card,.panel {
+  background:linear-gradient(145deg,#15233b,#0e1729);
+  border:1px solid var(--border);
+  border-radius:15px;
+  padding:17px;
+  margin-bottom:16px;
+}
+.card small { color:var(--muted); }
+.card h2 { margin:12px 0 0; font-size:27px; }
+.cyan { color:var(--cyan); }
+.green { color:var(--green); }
+.red { color:var(--red); }
+.purple { color:#c49aff; }
+h3 { margin:0 0 16px; font-size:17px; }
+.form-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+}
+input,select,button {
+  width:100%;
+  padding:12px;
+  border-radius:9px;
+  border:1px solid var(--border);
+  background:#0a1324;
+  color:white;
+  font-size:14px;
+}
+button {
+  cursor:pointer;
+  background:linear-gradient(100deg,#087eaa,#673ac2);
+  border:0;
+  font-weight:bold;
+}
+button:hover { filter:brightness(1.15); }
+button.secondary { background:#25334b; }
+button.danger { background:#8e3047; }
+.actions {
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.actions button { flex:1; min-width:130px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td {
+  padding:12px 8px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+}
+th { color:var(--cyan); }
+.table-wrap { overflow-x:auto; }
+.bar-row {
+  display:grid;
+  grid-template-columns:65px 1fr 40px;
+  align-items:center;
+  gap:10px;
+  margin:14px 0;
+  font-size:13px;
+}
+.track { height:11px; background:#26344b; border-radius:20px; overflow:hidden; }
+.fill { height:100%; border-radius:20px; background:linear-gradient(90deg,var(--cyan),var(--purple)); }
+.empty { color:var(--muted); text-align:center; padding:25px 5px; }
+footer {
+  color:var(--muted);
+  text-align:center;
+  font-size:12px;
+  padding:22px;
+}
+@media(max-width:500px) {
+  .container { padding:12px; }
+  .card { padding:13px; }
+  th,td { padding:10px 6px; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>NUMBERPLAY AI</h1>
+  <p>Historical Statistics & Analytics Dashboard</p>
+</header>
+
+<main class="container">
+
+  <div class="notice">
+    EDUCATIONAL MODE: This dashboard studies previously entered results.
+    It does not hack game servers, predict guaranteed outcomes, or recommend bets.
+    All data is stored locally in this browser.
+  </div>
+
+  <section class="grid">
+    <div class="card">
+      <small>Total Records</small>
+      <h2 class="cyan" id="total">0</h2>
+    </div>
+    <div class="card">
+      <small>Big Results</small>
+      <h2 class="green" id="bigCount">0</h2>
+    </div>
+    <div class="card">
+      <small>Small Results</small>
+      <h2 class="purple" id="smallCount">0</h2>
+    </div>
+    <div class="card">
+      <small>Average Number</small>
+      <h2 id="average">—</h2>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>➕ Add Historical Result</h3>
+    <div class="form-grid">
+      <input id="period" placeholder="Period / Issue ID">
+      <input id="number" type="number" min="0" max="9" placeholder="Result (0–9)">
+      <select id="color">
+        <option value="">Colour (optional)</option>
+        <option value="Red">Red</option>
+        <option value="Green">Green</option>
+        <option value="Violet">Violet</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button onclick="addResult()">Add Result</button>
+      <button class="secondary" onclick="exportCSV()">Export CSV</button>
+      <button class="secondary" onclick="document.getElementById('csvFile').click()">Import CSV</button>
+      <input id="csvFile" type="file" accept=".csv,text/csv" hidden onchange="importCSV(event)">
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h3>Big / Small Distribution</h3>
+      <div id="distribution"></div>
+    </div>
+    <div class="panel">
+      <h3>Number Frequency</h3>
+      <div id="frequency"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Colour Statistics</h3>
+    <div id="colors"></div>
+    <small style="color:var(--muted)">
+      Colours are based on the labels manually entered by you.
+    </small>
+  </section>
+
+  <section class="panel">
+    <h3>Historical Analysis</h3>
+    <div id="analysis" class="empty">
+      Add historical results to begin analysis.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Result History</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Number</th>
+            <th>Size</th>
+            <th>Colour</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="history"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="danger" onclick="clearHistory()">Clear All Data</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  NUMBERPLAY AI ANALYTICS · Educational historical-data tool
+</footer>
+
+<script>
+const STORAGE_KEY = "numberplay_analytics_v1";
+
+let records = [];
+
+try {
+  records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  if (!Array.isArray(records)) records = [];
+} catch {
+  records = [];
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function sizeOf(n) {
+  return n >= 5 ? "BIG" : "SMALL";
+}
+
+function addResult() {
+  const periodInput = document.getElementById("period");
+  const numberInput = document.getElementById("number");
+  const colorInput = document.getElementById("color");
+
+  const period = periodInput.value.trim();
+  const number = Number(numberInput.value);
+  const color = colorInput.value;
+
+  if (!period) {
+    alert("Please enter a period ID.");
+    return;
+  }
+
+  if (numberInput.value === "" ||
+      !Number.isInteger(number) ||
+      number < 0 || number > 9) {
+    alert("Enter a whole number from 0 to 9.");
+    return;
+  }
+
+  if (records.some(r => r.period === period)) {
+    alert("This period is already recorded.");
+    return;
+  }
+
+  records.unshift({
+    period,
+    number,
+    color,
+    createdAt: new Date().toISOString()
+  });
+
+  save();
+  periodInput.value = "";
+  numberInput.value = "";
+  colorInput.value = "";
+  render();
+}
+
+function percent(value, total) {
+  return total ? (value / total * 100).toFixed(1) : "0.0";
+}
+
+function makeBar(label, count, total) {
+  const p = total ? count / total * 100 : 0;
+  return `
+    <div class="bar-row">
+      <span>${label}</span>
+      <div class="track">
+        <div class="fill" style="width:${p}%"></div>
+      </div>
+      <b>${count}</b>
+    </div>`;
+}
+
+function render() {
+  const total = records.length;
+  const big = records.filter(r => sizeOf(r.number) === "BIG").length;
+  const small = total - big;
+
+  const average = total
+    ? (records.reduce((sum, r) => sum + r.number, 0) / total).toFixed(2)
+    : "—";
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("bigCount").textContent = big;
+  document.getElementById("smallCount").textContent = small;
+  document.getElementById("average").textContent = average;
+
+  document.getElementById("distribution").innerHTML = total
+    ? makeBar("Big", big, total) +
+      makeBar("Small", small, total)
+    : '<div class="empty">No records yet.</div>';
+
+  const counts = Array(10).fill(0);
+  records.forEach(r => counts[r.number]++);
+
+  document.getElementById("frequency").innerHTML = total
+    ? counts.map((count, n) => makeBar(String(n), count, total)).join("")
+    : '<div class="empty">No records yet.</div>';
+
+  const colourNames = ["Red", "Green", "Violet", "Other"];
+  const colourHTML = colourNames.map(name => {
+    const count = records.filter(r => r.color === name).length;
+    return makeBar(name, count, total);
+  }).join("");
+
+  document.getElementById("colors").innerHTML = total
+    ? colourHTML
+    : '<div class="empty">No colour records yet.</div>';
+
+  const recent = records.slice(0, 10);
+  const recentBig = recent.filter(r => sizeOf(r.number) === "BIG").length;
+  const recentSmall = recent.length - recentBig;
+
+  let longestRun = 0;
+  let currentRun = 0;
+  let previous = null;
+
+  records.forEach(r => {
+    const current = sizeOf(r.number);
+    if (current === previous) currentRun++;
+    else currentRun = 1;
+    previous = current;
+    longestRun = Math.max(longestRun, currentRun);
+  });
+
+  document.getElementById("analysis").innerHTML = total
+    ? `
+      <p>Records analysed: <b>${total}</b></p>
+      <p>Big frequency: <b>${percent(big,total)}%</b></p>
+      <p>Small frequency: <b>${percent(small,total)}%</b></p>
+      <p>Recent 10 records: <b>${recentBig} Big</b> and
+         <b>${recentSmall} Small</b></p>
+      <p>Longest historical same-size run: <b>${longestRun}</b></p>
+      <p style="color:var(--muted);font-size:12px">
+        These are descriptions of past records, not evidence that
+        the next result is more likely to be Big or Small.
+      </p>
+    `
+    : "Add historical results to begin analysis.";
+
+  document.getElementById("history").innerHTML = total
+    ? records.map((r, index) => `
+      <tr>
+        <td>${escapeHTML(r.period)}</td>
+        <td><b>${r.number}</b></td>
+        <td class="${sizeOf(r.number) === "BIG" ? "green" : "purple"}">
+          ${sizeOf(r.number)}
+        </td>
+        <td>${escapeHTML(r.color || "—")}</td>
+        <td><button class="danger" style="padding:7px"
+          onclick="deleteResult(${index})">Delete</button></td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="5" class="empty">No results added yet.</td></tr>';
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  })[ch]);
+}
+
+function deleteResult(index) {
+  if (!confirm("Delete this historical record?")) return;
+  records.splice(index, 1);
+  save();
+  render();
+}
+
+function clearHistory() {
+  if (!confirm("Permanently clear all locally saved records?")) return;
+  records = [];
+  save();
+  render();
+}
+
+function exportCSV() {
+  const rows = [
+    ["period", "number", "color"],
+    ...records.map(r => [r.period, r.number, r.color || ""])
+  ];
+
+  const csv = rows.map(row =>
+    row.map(value =>
+      '"' + String(value).replace(/"/g, '""') + '"'
+    ).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "numberplay-history.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let value = "";
+  let quoted = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (ch === '"' && quoted && line[i + 1] === '"') {
+      value += '"';
+      i++;
+    } else if (ch === '"') {
+      quoted = !quoted;
+    } else if (ch === "," && !quoted) {
+      result.push(value);
+      value = "";
+    } else {
+      value += ch;
+    }
+  }
+
+  result.push(value);
+  return result;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
+    let added = 0;
+
+    lines.slice(1).forEach(line => {
+      const row = parseCSVLine(line);
+      const period = (row[0] || "").trim();
+      const number = Number(row[1]);
+      const color = (row[2] || "").trim();
+
+      if (!period || row[1] === "" ||
+          !Number.isInteger(number) || number < 0 || number > 9) {
+        return;
+      }
+
+      if (records.some(r => r.period === period)) return;
+
+      records.push({
+        period,
+        number,
+        color: ["Red","Green","Violet","Other"].includes(color)
+          ? color : "",
+        createdAt: new Date().toISOString()
+      });
+
+      added++;
+    });
+
+    save();
+    render();
+    alert(added + " records imported.");
+    event.target.value = "";
+  };
+
+  reader.readAsText(file);
+}
+
+render();
+</script>
+</body>
+</html>
